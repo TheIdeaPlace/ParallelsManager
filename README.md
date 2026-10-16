@@ -2,7 +2,7 @@
 
 A native macOS app to manage Parallels Desktop virtual machines, made to work fully with VoiceOver and the keyboard: start, stop, clone and delete VMs, and make new Windows 11 and Ubuntu VMs with no installer questions.
 
-**[Download the latest release](https://github.com/TheIdeaPlace/ParallelsManager/releases/latest)** — `ParallelsManager-<version>.dmg`. Open it and drag Parallels Manager to Applications. It's signed and notarized by Apple, so it opens normally.
+**[Download the latest release](https://github.com/TheIdeaPlace/ParallelsManager/releases/latest)** — `ParallelsManager-<version>.dmg`. Open it and move Parallels Manager to your Applications folder. It's signed and notarized by Apple, so it opens normally.
 
 ## What It Does
 
@@ -129,7 +129,7 @@ Build output goes to `build/`:
 
 ```
 build/
-  Parallels Manager.app            ← drag this to /Applications to use locally
+  Parallels Manager.app            ← move this to /Applications to use locally
   ParallelsManager-<version>.dmg   ← what a release publishes
 ```
 
