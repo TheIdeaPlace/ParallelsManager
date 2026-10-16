@@ -60,7 +60,7 @@ Three access paths are available:
 
 2. **Context menu (VO + Shift + M)** — move VoiceOver focus to any VM row and press VO + Shift + M to open the context menu for that VM.
 
-3. **Accessibility actions (VO + Z)** — move VoiceOver focus to any VM row and press VO + Z to cycle through quick actions: Start, Stop, Pause, Resume, Clone, Delete, and Remove from List for an invalid VM.
+3. **Accessibility actions (VO + Command + Space)** — move VoiceOver focus to any VM row and press VO + Command + Space for its actions: Start, Stop, Pause, Resume, Clone, Delete, and Remove from List for an invalid VM.
 
 Each VM row reads aloud as **"[Name], [status]"**, with "Busy" added while an action is running.
 
