@@ -10,6 +10,11 @@ struct ContentView: View {
                 NewWindowsVMSheet()
                     .environmentObject(store)
             }
+            // New Ubuntu VM sheet
+            .sheet(isPresented: $store.showNewUbuntuSheet) {
+                NewUbuntuVMSheet()
+                    .environmentObject(store)
+            }
             // Clone sheet
             .sheet(item: $store.cloneTargetVM) { vm in
                 CloneSheet(vm: vm, cloneName: $store.cloneName,
@@ -26,6 +31,17 @@ struct ContentView: View {
                 Button("Cancel", role: .cancel)      { store.deleteTarget = nil }
             } message: {
                 Text("This permanently removes the VM and all its files. This cannot be undone.")
+            }
+            // Remove from List confirmation (an invalid VM, whose files are gone)
+            .confirmationDialog(
+                "Remove \"\(store.removeTarget?.name ?? "")\" from the list?",
+                isPresented: $store.showRemoveConfirm,
+                titleVisibility: .visible
+            ) {
+                Button("Remove from List") { store.commitRemove() }
+                Button("Cancel", role: .cancel) { store.removeTarget = nil }
+            } message: {
+                Text("Parallels can't find this VM's files, so it can't start or delete it. Removing it only makes Parallels forget it; any files that still exist are left where they are.")
             }
     }
 
@@ -55,6 +71,13 @@ struct ContentView: View {
                     Label("New Windows VM", systemImage: "plus")
                 }
                 .help("Create a new Windows 11 ARM VM")
+
+                Button {
+                    store.showNewUbuntuSheet = true
+                } label: {
+                    Label("New Ubuntu VM", systemImage: "plus")
+                }
+                .help("Create a new Ubuntu desktop VM (⌘⌥N)")
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
@@ -123,8 +146,11 @@ private struct VMAccessibilityActions: ViewModifier {
         if vm.status.canSuspend { view = AnyView(view.accessibilityAction(named: Text("Suspend")) { store.perform(.suspend, on: vm) }) }
         if vm.status.canStop    { view = AnyView(view.accessibilityAction(named: Text("Stop"))    { store.perform(.stop,    on: vm) }) }
         if vm.status.canReset   { view = AnyView(view.accessibilityAction(named: Text("Reset"))   { store.perform(.reset,   on: vm) }) }
-        view = AnyView(view.accessibilityAction(named: Text("Clone…"))  { store.beginClone(vm) })
-        view = AnyView(view.accessibilityAction(named: Text("Delete…")) { store.beginDelete(vm) })
+        if vm.status.canUnregister {
+            view = AnyView(view.accessibilityAction(named: Text("Remove from List…")) { store.beginRemove(vm) })
+        }
+        if vm.status.canClone  { view = AnyView(view.accessibilityAction(named: Text("Clone…"))  { store.beginClone(vm) }) }
+        if vm.status.canDelete { view = AnyView(view.accessibilityAction(named: Text("Delete…")) { store.beginDelete(vm) }) }
         return view
     }
 }
@@ -138,8 +164,9 @@ private extension ContentView {
         if vm.status.canSuspend { Button("Suspend") { store.perform(.suspend, on: vm) } }
         if vm.status.canStop    { Button("Stop")    { store.perform(.stop,    on: vm) } }
         if vm.status.canReset   { Button("Reset")   { store.perform(.reset,   on: vm) } }
+        if vm.status.canUnregister { Button("Remove from List…") { store.beginRemove(vm) } }
         Divider()
-        Button("Clone…")                            { store.beginClone(vm) }
-        Button("Delete…", role: .destructive)       { store.beginDelete(vm) }
+        if vm.status.canClone  { Button("Clone…")                      { store.beginClone(vm) } }
+        if vm.status.canDelete { Button("Delete…", role: .destructive) { store.beginDelete(vm) } }
     }
 }

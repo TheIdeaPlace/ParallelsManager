@@ -39,7 +39,10 @@ cp "$SCRIPT_DIR/Sources/ParallelsManager/Resources/install-windows-full.sh" \
    "$APP_BUNDLE/Contents/Resources/"
 cp "$SCRIPT_DIR/Sources/ParallelsManager/Resources/Install Windows (Full).command" \
    "$APP_BUNDLE/Contents/Resources/"
+cp "$SCRIPT_DIR/Sources/ParallelsManager/Resources/install-ubuntu.sh" \
+   "$APP_BUNDLE/Contents/Resources/"
 chmod +x "$APP_BUNDLE/Contents/Resources/install-windows-full.sh"
+chmod +x "$APP_BUNDLE/Contents/Resources/install-ubuntu.sh"
 chmod +x "$APP_BUNDLE/Contents/Resources/Install Windows (Full).command"
 
 # Strip quarantine from binary (not needed for self-built, but be safe)

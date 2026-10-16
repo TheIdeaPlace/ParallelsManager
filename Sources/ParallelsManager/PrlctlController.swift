@@ -138,6 +138,7 @@ struct PrlctlController {
             case "stopped":   status = .stopped
             case "paused":    status = .paused
             case "suspended": status = .suspended
+            case "invalid":   status = .invalid
             default:          status = .unknown
             }
             vms.append(VM(id: uuid, name: name.isEmpty ? uuid : name, status: status))

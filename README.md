@@ -12,8 +12,11 @@ Parallels Manager lists all your Parallels Desktop VMs and lets you:
 - **Resume** a paused or suspended VM
 - **Clone** a VM (prompts for a new name)
 - **Delete** a VM (with confirmation)
+- **Remove from List** a VM whose files are gone (Parallels shows it as invalid, and can't start or delete it): Parallels forgets it, and any files that still exist are left alone
+- **Create a new Windows 11 ARM VM** (File, New Windows VM…, ⌘N)
+- **Create a new Ubuntu desktop VM** (File, New Ubuntu VM…, ⌘⌥N), with no installer questions — see below
 
-The VM list auto-refreshes every 10 seconds. A busy indicator appears on the row while an operation is in progress.
+The VM list refreshes after each action and with ⌘R (not on a timer, which was taken out as a VoiceOver fix). A busy indicator appears on the row while an operation is in progress.
 
 ## Requirements
 
@@ -42,6 +45,7 @@ You can also use the **VM Actions** menu in the menu bar. The selected VM (highl
 | Resume | ⌘ ⇧ P |
 | Clone… | ⌘ ⇧ D |
 | Delete… | ⌘ ⇧ ⌫ |
+| Remove from List… | (menu only; for invalid VMs) |
 
 Click a row first so the app knows which VM to act on, then press the shortcut.
 
@@ -53,9 +57,38 @@ Three access paths are available:
 
 2. **Context menu (VO + Shift + M)** — move VoiceOver focus to any VM row and press VO + Shift + M to open the context menu for that VM.
 
-3. **Accessibility actions (VO + Z)** — move VoiceOver focus to any VM row and press VO + Z to cycle through quick actions: Start, Stop, Pause, Resume, Clone, Delete.
+3. **Accessibility actions (VO + Z)** — move VoiceOver focus to any VM row and press VO + Z to cycle through quick actions: Start, Stop, Pause, Resume, Clone, Delete, and Remove from List for an invalid VM.
 
 Each VM row reads aloud as: **"[Name], [status]"** with a hint pointing to the context menu and action rotor.
+
+## Processors, memory and disk
+
+Both New VM dialogs have three pop-up menus, after the name fields:
+
+- **Processors:** from 1 to as many as this Mac has.
+- **Memory:** from 2 GB up to this Mac's memory less 4 GB, which is always left for the Mac itself.
+- **Disk size:** 32, 64, 128, 256 or 512 GB. That's the most the disk can grow to; it takes up only what's used.
+
+New Windows VM starts at 6 processors, 8 GB and 128 GB; New Ubuntu VM at 4 processors, 6 GB and 64 GB (on a Mac with less than 16 GB, 4 GB). Both are brought down to what a smaller Mac can give.
+
+## New Ubuntu VM
+
+File, **New Ubuntu VM…** (⌘⌥N) makes an Ubuntu 26.04 LTS desktop VM without the installer asking anything. Give it a name, the Ubuntu user name and password, its processors, memory and disk size (see below), and choose:
+
+- **Orca screen reader on from the start**, at the login screen and after.
+- **Sign in automatically.**
+- **Backtick key is Caps Lock, Orca's key.** macOS keeps the real Caps Lock for itself, so the backtick/tilde key takes its place (through keyd, the way SharpKeys does on Windows), and Orca uses its laptop layout, whose Orca key is Caps Lock. The VM then can't type a backtick or tilde.
+- **sudo without a password**, handy for setting the VM up over SSH.
+
+Terminal shows the progress. The first time, it downloads Ubuntu's desktop installer (about 6 GB, kept in `~/Library/Application Support/ParallelsManager/UbuntuInstall` and checked against Ubuntu's checksums). The install takes 15 to 40 minutes and ends with the VM turning itself off; then a snapshot of the fresh install is taken and the VM starts. Terminal prints its address and the SSH command; your Mac's SSH public keys are already in it, and it has your Mac's time zone.
+
+It needs **Parallels Desktop Pro or Business** (creating VMs from the command line) and two Homebrew packages: `brew install xorriso openssl` (macOS's own `openssl` can't make the password hash Ubuntu needs).
+
+The script, `Sources/ParallelsManager/Resources/install-ubuntu.sh`, also runs on its own: `VM_NAME="My Ubuntu" bash install-ubuntu.sh` asks for the password. Its header lists the other settings.
+
+Two things learned the hard way, built into it:
+- **Never snapshot a running Linux VM.** The pause trips Ubuntu's service watchdogs, which signs you out and stops Orca. Shut it down first.
+- It uses Ubuntu's **desktop** installer, not the server one: only the desktop one brings Firefox and the other snap apps, and without a browser, sign-ins that open a web page fail.
 
 ## Building from Source
 
@@ -113,6 +146,10 @@ parallels-manager/
     ContentView.swift             Main window: List with selection, sheets, dialogs
     VMRow.swift                   Single VM row (VoiceOver-friendly single element)
     CloneSheet.swift              Sheet for entering a clone name
+    NewWindowsVMSheet.swift       New Windows 11 ARM VM: launches install-windows-full.sh in Terminal
+    NewUbuntuVMSheet.swift        New Ubuntu VM: launches install-ubuntu.sh in Terminal
+    HardwareChoices.swift         Processors, memory and disk menus shared by both New VM dialogs
+    Resources/install-ubuntu.sh   Unattended Ubuntu desktop install (download, answer file, prlctl)
 ```
 
 ## Technical Notes
@@ -121,7 +158,7 @@ parallels-manager/
 - **prlctl path.** Parallels installs `prlctl` at `/usr/local/bin/prlctl`. If yours is elsewhere, update the path in `PrlctlController.swift`.
 - **Signing.** `build.sh` signs with `Developer ID Application: Kelly Ford (P887QF74N8)`. Update `SIGN_ID` in `build.sh` if you are building under a different certificate.
 - **Swift Package Manager.** No Xcode project file — build entirely via `swift build`. macOS 13+ target.
-- **Auto-refresh.** `VMStore` fires a `Timer` every 10 seconds and re-runs `prlctl list --all`.
+- **Refresh.** `VMStore` re-runs `prlctl list --all` after each action and on ⌘R; there's no timer (taken out as a VoiceOver fix).
 
 ## Distribution
 

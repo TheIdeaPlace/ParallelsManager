@@ -8,6 +8,9 @@ enum VMStatus: String, Equatable {
     case stopped
     case paused
     case suspended
+    /// Parallels still lists the VM, but its files are gone or unreadable
+    /// (moved to the Trash, deleted outside Parallels, on a missing drive).
+    case invalid
     case unknown
 
     var displayName: String {
@@ -16,6 +19,7 @@ enum VMStatus: String, Equatable {
         case .stopped:   return "Stopped"
         case .paused:    return "Paused"
         case .suspended: return "Suspended"
+        case .invalid:   return "Invalid (files missing)"
         case .unknown:   return "Unknown"
         }
     }
@@ -26,6 +30,11 @@ enum VMStatus: String, Equatable {
     var canResume:  Bool { self == .paused   || self == .suspended }
     var canSuspend: Bool { self == .running }
     var canReset:   Bool { self == .running  || self == .paused }
+    /// Delete needs the VM's files, so it can't work on an invalid VM.
+    var canDelete:  Bool { self != .invalid }
+    var canClone:   Bool { self != .invalid }
+    /// Remove from List (prlctl unregister) is the way out for an invalid VM.
+    var canUnregister: Bool { self == .invalid }
 }
 
 // MARK: - VM Model
@@ -39,7 +48,7 @@ struct VM: Identifiable, Equatable {
 // MARK: - VM Action
 
 enum VMAction {
-    case start, stop, pause, resume, suspend, reset, delete, clone(newName: String)
+    case start, stop, pause, resume, suspend, reset, delete, unregister, clone(newName: String)
 
     var displayName: String {
         switch self {
@@ -50,6 +59,7 @@ enum VMAction {
         case .suspend: return "Suspend"
         case .reset:   return "Reset"
         case .delete:  return "Delete"
+        case .unregister: return "Remove from List"
         case .clone:   return "Clone"
         }
     }
@@ -63,6 +73,7 @@ enum VMAction {
         case .suspend:             return ["suspend"]
         case .reset:               return ["reset"]
         case .delete:              return ["delete"]
+        case .unregister:          return ["unregister"]
         case .clone(let newName):  return ["clone", "--name", newName]
         }
     }
@@ -81,7 +92,10 @@ final class VMStore: ObservableObject {
     @Published var cloneName: String = ""
     @Published var showDeleteConfirm = false
     @Published var deleteTarget: VM? = nil
+    @Published var showRemoveConfirm = false
+    @Published var removeTarget: VM? = nil
     @Published var showNewVMSheet = false
+    @Published var showNewUbuntuSheet = false
 
     var selectedVM: VM? { vms.first { $0.id == selectedID } }
 
@@ -146,5 +160,13 @@ final class VMStore: ObservableObject {
     func commitDelete() {
         if let vm = deleteTarget { perform(.delete, on: vm) }
         deleteTarget = nil
+    }
+    func beginRemove(_ vm: VM) {
+        removeTarget = vm
+        showRemoveConfirm = true
+    }
+    func commitRemove() {
+        if let vm = removeTarget { perform(.unregister, on: vm) }
+        removeTarget = nil
     }
 }

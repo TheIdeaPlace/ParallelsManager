@@ -7,16 +7,29 @@ struct NewWindowsVMSheet: View {
 
     @State private var vmName = "Windows 11 ARM"
     @State private var errorMessage: String? = nil
+    // install-windows-full.sh's own defaults, 6 processors, 8 GB and 128 GB,
+    // brought down to what a smaller Mac can give.
+    @State private var processors = HostResources.clamp(6, to: HostResources.processorChoices)
+    @State private var memoryGB = HostResources.clamp(8, to: HostResources.memoryChoicesGB)
+    @State private var diskGB = 128
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("New Windows 11 ARM VM")
                 .font(.headline)
 
-            Form {
-                TextField("VM Name", text: $vmName)
+            // Not a Form: opened from the File menu, a Form in this sheet left
+            // Tab stuck in the field (the keyboard shortcut didn't).
+            HStack(spacing: 10) {
+                Text("VM name:")
+                TextField("VM name", text: $vmName)
+                    .textFieldStyle(.roundedBorder)
+                    .labelsHidden()
+                    .accessibilityLabel("VM name")
                     .frame(width: 300)
             }
+
+            HardwareChoices(processors: $processors, memoryGB: $memoryGB, diskGB: $diskGB)
 
             Text("Downloads Windows 11 ARM64 from UUP Dump (~5 GB first run, cached after that) and creates a fully unattended VM with Parallels Tools and Edge pre-installed.\n\nRequired Homebrew packages: aria2, p7zip, cabextract, wimlib, cdrtools\nInstall: brew install aria2 p7zip cabextract wimlib cdrtools")
                 .font(.caption)
@@ -79,6 +92,9 @@ struct NewWindowsVMSheet: View {
                 "#!/usr/bin/env bash",
                 "export VM_NAME='\(safeN)'",
                 "export WORK_DIR='\(safeW)'",
+                "export VM_CPUS=\(processors)",
+                "export VM_RAM=\(memoryGB * 1024)",
+                "export VM_DISK_GB=\(diskGB)",
                 "export PATH=\"/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:$PATH\"",
                 "cd \"$(dirname \"$0\")\"" ,
                 "bash install-windows-full.sh",

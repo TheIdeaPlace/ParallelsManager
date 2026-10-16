@@ -49,6 +49,7 @@ struct VMRow: View {
         case .running:   return .green
         case .paused:    return .orange
         case .suspended: return .yellow
+        case .invalid:   return .red
         case .stopped, .unknown: return .gray
         }
     }

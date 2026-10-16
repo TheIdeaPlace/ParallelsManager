@@ -23,10 +23,14 @@ struct ParallelsManagerApp: App {
                     .keyboardShortcut("c", modifiers: [.command, .shift])
                     .disabled(store.selectedVM == nil)
             }
-            // ── New Windows VM ──────────────────────────────────────────────
-            CommandGroup(after: .newItem) {
+            // ── New VMs ─────────────────────────────────────────────────────
+            // Replaces SwiftUI's File, New Window, which also took ⌘N (so ⌘N
+            // opened a second main window rather than New Windows VM).
+            CommandGroup(replacing: .newItem) {
                 Button("New Windows VM…") { store.showNewVMSheet = true }
                     .keyboardShortcut("n", modifiers: .command)
+                Button("New Ubuntu VM…") { store.showNewUbuntuSheet = true }
+                    .keyboardShortcut("n", modifiers: [.command, .option])
             }
             // ── VM Actions menu ───────────────────────────────────────────
             CommandMenu("VM Actions") {
@@ -61,13 +65,18 @@ struct ParallelsManagerApp: App {
                     if let v = store.selectedVM { store.beginClone(v) }
                 }
                 .keyboardShortcut("d", modifiers: [.command, .shift])
-                .disabled(vm == nil || store.busyIDs.contains(vm!.id))
+                .disabled(vm == nil || store.busyIDs.contains(vm!.id) || !(vm!.status.canClone))
 
                 Button("Delete…") {
                     if let v = store.selectedVM { store.beginDelete(v) }
                 }
                 .keyboardShortcut(.delete, modifiers: [.command, .shift])
-                .disabled(vm == nil || store.busyIDs.contains(vm!.id))
+                .disabled(vm == nil || store.busyIDs.contains(vm!.id) || !(vm!.status.canDelete))
+
+                Button("Remove from List…") {
+                    if let v = store.selectedVM { store.beginRemove(v) }
+                }
+                .disabled(vm == nil || store.busyIDs.contains(vm!.id) || !(vm!.status.canUnregister))
             }
         }
     }
