@@ -1,0 +1,33 @@
+name: Report a problem
+description: Something in Parallels Manager doesn't work as it should.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Parallels Manager version
+      description: Parallels Manager menu, About Parallels Manager.
+      placeholder: "1.1.0"
+  - type: input
+    id: macos
+    attributes:
+      label: macOS and Parallels Desktop versions
+      placeholder: "macOS 26.1, Parallels Desktop 27.0.3 Pro"
+  - type: input
+    id: assistive
+    attributes:
+      label: Screen reader or other assistive technology, if any
+      placeholder: "VoiceOver"
+  - type: textarea
+    id: terminal
+    attributes:
+      label: Terminal output
+      description: For a New Ubuntu VM or New Windows VM problem, paste what Terminal showed.
+      render: text

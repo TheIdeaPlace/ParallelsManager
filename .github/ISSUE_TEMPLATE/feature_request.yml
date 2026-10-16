@@ -1,0 +1,11 @@
+name: Suggest an idea
+description: Something Parallels Manager could do, or do better.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: The idea
+      description: What you'd like it to do, and what it would help with.
+    validations:
+      required: true

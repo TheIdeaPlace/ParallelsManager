@@ -1,0 +1,21 @@
+version: 2
+updates:
+  # Versions of the actions in .github/workflows/*.yml, pinned to commits.
+  # Grouped so a change that touches every action at once (a runtime move,
+  # say) arrives as one pull request, not one per action.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: ci
+    groups:
+      actions:
+        patterns:
+          - "*"
+
+  # Swift packages. Package.swift has none today; this watches for any added.
+  - package-ecosystem: swift
+    directory: "/"
+    schedule:
+      interval: weekly

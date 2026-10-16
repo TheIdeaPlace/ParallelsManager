@@ -117,7 +117,8 @@ struct PrlctlController {
     // prlctl list --all -o uuid,status,name produces lines like:
     // {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx} running   My VM Name
 
-    private static func parseList(_ raw: String) -> [VM] {
+    // Internal, not private, so the tests can feed it prlctl output.
+    static func parseList(_ raw: String) -> [VM] {
         var vms: [VM] = []
         for line in raw.components(separatedBy: "\n") {
             let trimmed = line.trimmingCharacters(in: .whitespaces)
@@ -127,11 +128,13 @@ struct PrlctlController {
             let uuid = String(trimmed[trimmed.startIndex...closeBrace])
             let rest = trimmed[trimmed.index(after: closeBrace)...]
                 .trimmingCharacters(in: .whitespaces)
-            // Next token is status, rest is name
-            let parts = rest.components(separatedBy: .whitespaces)
-            guard parts.count >= 2 else { continue }
-            let statusStr = parts[0].lowercased()
-            let name = parts.dropFirst().joined(separator: " ")
+            // Next token is the status; everything after the spaces that pad
+            // the column is the name, exactly as written. (Splitting on every
+            // space and rejoining kept the padding as leading spaces, so names
+            // were shown and read as "   TCP Linux".)
+            guard let statusEnd = rest.firstIndex(where: { $0 == " " || $0 == "\t" }) else { continue }
+            let statusStr = rest[..<statusEnd].lowercased()
+            let name = rest[statusEnd...].trimmingCharacters(in: .whitespaces)
             let status: VMStatus
             switch statusStr {
             case "running":   status = .running

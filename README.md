@@ -1,6 +1,8 @@
 # Parallels Manager
 
-A native macOS SwiftUI app to manage Parallels Desktop virtual machines — with full VoiceOver accessibility.
+A native macOS app to manage Parallels Desktop virtual machines, made to work fully with VoiceOver and the keyboard: start, stop, clone and delete VMs, and make new Windows 11 and Ubuntu VMs with no installer questions.
+
+**[Download the latest release](https://github.com/TheIdeaPlace/ParallelsManager/releases/latest)** — `ParallelsManager-<version>.dmg`. Open it and drag Parallels Manager to Applications. It's signed and notarized by Apple, so it opens normally.
 
 ## What It Does
 
@@ -22,10 +24,11 @@ The VM list refreshes after each action and with ⌘R (not on a timer, which was
 
 | Requirement | Notes |
 |---|---|
-| macOS 13 Ventura or later | Apple Silicon or Intel |
+| macOS 14 Sonoma or later | On a Mac with Apple silicon |
 | Parallels Desktop | `/usr/local/bin/prlctl` must be present |
-| Xcode Command Line Tools | For building from source (`xcode-select --install`) |
-| Developer ID certificate | Only needed for the signed build and DMG |
+| Parallels Desktop **Pro** or Business | Only for New Ubuntu VM and New Windows VM (creating VMs from the command line) |
+| Homebrew packages | New Ubuntu VM: `brew install xorriso openssl`. New Windows VM: `brew install aria2 p7zip cabextract wimlib cdrtools` |
+| Xcode | Only for building from source |
 
 ## Using the App
 
@@ -59,7 +62,7 @@ Three access paths are available:
 
 3. **Accessibility actions (VO + Z)** — move VoiceOver focus to any VM row and press VO + Z to cycle through quick actions: Start, Stop, Pause, Resume, Clone, Delete, and Remove from List for an invalid VM.
 
-Each VM row reads aloud as: **"[Name], [status]"** with a hint pointing to the context menu and action rotor.
+Each VM row reads aloud as **"[Name], [status]"**, with "Busy" added while an action is running.
 
 ## Processors, memory and disk
 
@@ -99,41 +102,41 @@ The easiest way is to double-click one of the Finder launchers in this folder.
 | File | What it does |
 |---|---|
 | `Build App.command` | Compiles the app and places it at `build/Parallels Manager.app`. Signs with your Developer ID. |
-| `Package DMG.command` | Builds the app and creates a distributable DMG at `build/Parallels Manager 1.0.dmg`. |
+| `Package DMG.command` | Builds the app and creates a distributable DMG at `build/ParallelsManager-<version>.dmg`. |
 
 Both launchers open in Terminal automatically when double-clicked. The first time you run them macOS may ask you to confirm — click Open.
 
 ### Terminal
 
 ```bash
-cd parallels-manager
+# Run the tests
+swift test
 
-# Build the app (signed)
+# Build the app (signed, for Apple silicon)
 ./build.sh
 
 # Build without signing (for local testing)
 ./build.sh --skip-sign
 
-# Build the full distributable DMG
+# Build the DMG, signed
 ./package-dmg.sh
 
-# DMG without signing
-./package-dmg.sh --skip-sign
+# ...and notarized and stapled, with the key in ~/.signing-kit
+NOTARIZE=1 ./package-dmg.sh
 ```
 
-Build output goes to `parallels-manager/build/`:
+Build output goes to `build/`:
 
 ```
 build/
-  Parallels Manager.app      ← drag this to /Applications to use locally
-  Parallels Manager 1.0.dmg  ← share this for distribution
+  Parallels Manager.app            ← drag this to /Applications to use locally
+  ParallelsManager-<version>.dmg   ← what a release publishes
 ```
 
 ## Project Structure
 
 ```
-parallels-manager/
-  Package.swift                   Swift Package Manager manifest
+  Package.swift                   Swift Package Manager manifest (the app and its tests)
   Info.plist                      App bundle metadata (bundle ID, no sandbox)
   build.sh                        Build + sign script
   package-dmg.sh                  DMG packaging script
@@ -150,6 +153,11 @@ parallels-manager/
     NewUbuntuVMSheet.swift        New Ubuntu VM: launches install-ubuntu.sh in Terminal
     HardwareChoices.swift         Processors, memory and disk menus shared by both New VM dialogs
     Resources/install-ubuntu.sh   Unattended Ubuntu desktop install (download, answer file, prlctl)
+    Resources/install-windows-full.sh  Unattended Windows 11 ARM install
+  Tests/ParallelsManagerTests/    Tests: reading prlctl's list, which actions each state allows, hardware limits
+  release-notes/                  One file per release, used as its GitHub release notes
+  .github/workflows/ci.yml        Tests, build and shellcheck on every push and pull request
+  .github/workflows/release.yml   Signed, notarized release on a v* tag
 ```
 
 ## Technical Notes
@@ -157,9 +165,22 @@ parallels-manager/
 - **No App Sandbox.** The app shells out to `/usr/local/bin/prlctl` which requires subprocess execution that the sandbox disallows. This means it cannot be distributed through the Mac App Store — distribute via DMG from your own website.
 - **prlctl path.** Parallels installs `prlctl` at `/usr/local/bin/prlctl`. If yours is elsewhere, update the path in `PrlctlController.swift`.
 - **Signing.** `build.sh` signs with `Developer ID Application: Kelly Ford (P887QF74N8)`. Update `SIGN_ID` in `build.sh` if you are building under a different certificate.
-- **Swift Package Manager.** No Xcode project file — build entirely via `swift build`. macOS 13+ target.
+- **Swift Package Manager.** No Xcode project file — build entirely via `swift build`. macOS 14+ target.
 - **Refresh.** `VMStore` re-runs `prlctl list --all` after each action and on ⌘R; there's no timer (taken out as a VoiceOver fix).
 
-## Distribution
+## Releasing
 
-The `Package DMG.command` / `package-dmg.sh` produces a standard drag-to-Applications DMG suitable for posting on a website. Because the app is signed with a Developer ID certificate (not notarized), Gatekeeper will warn users when they first open it. They can right-click → Open to bypass the warning, or you can notarize the DMG with `xcrun notarytool` if you want a frictionless download experience.
+The version lives in one place, `CFBundleShortVersionString` in `Info.plist`. To release:
+
+1. Bump it, and add `release-notes/v<version>.md` (written for people using the app).
+2. Push the tag `v<version>`.
+
+`.github/workflows/release.yml` then checks the tag matches `Info.plist` and the notes exist, runs the tests, builds, signs with Developer ID, notarizes and staples the DMG, and publishes the GitHub release with the DMG and its SHA-256 checksum.
+
+Running the Release workflow by hand (Actions, Release, Run workflow) does all of that except publishing: a rehearsal, with the DMG kept as the run's artifact.
+
+The signing secrets (`MACOS_CERTIFICATE_*`, `NOTARY_*`) are set by `signing/sync-secrets.py` in The-Idea-Place-Projects, never by hand.
+
+## History
+
+Parallels Manager lived in [TheWorkBench](https://github.com/TheIdeaPlace/TheWorkBench) (`parallels-manager/`) until 1.1.0; its commit history came with it.

@@ -9,6 +9,11 @@ let package = Package(
             name: "ParallelsManager",
             path: "Sources/ParallelsManager",
             resources: [.copy("Resources")]
+        ),
+        .testTarget(
+            name: "ParallelsManagerTests",
+            dependencies: ["ParallelsManager"],
+            path: "Tests/ParallelsManagerTests"
         )
     ]
 )
